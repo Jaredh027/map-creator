@@ -2,16 +2,15 @@ import React, { useState, useEffect } from "react";
 import {
   debugPointsTerminal,
   edgesTerminal,
-  stops,
   stopToNodeTerminal,
 } from "./data/stops";
 import StopSelector from "./components/StopSelector";
 import AirportMapCanvas from "./components/AirportMapCanvas";
 import TerminalMapCanvas from "./components/TerminalMapCanvas";
-import { debugPoints } from "./data/stops";
 import { edges } from "./data/stops";
 import { stopToNode } from "./data/stops";
 import { nodes } from "./data/stops";
+import "./App.css";
 
 function findPath(nodes, edges, startNode, endNode) {
   // These is are in the form "P8"
@@ -121,10 +120,7 @@ function App() {
           <AirportMapCanvas path={path} />
         )}
 
-        <div>
-          <h3>Zoomed into Terminal {endNode?.terminal}</h3>
-          <TerminalMapCanvas terminal={endNode?.terminal} path={terminalPath} />
-        </div>
+        <TerminalMapCanvas terminal={endNode?.terminal} path={terminalPath} />
       </div>
     </div>
   );
