@@ -3,6 +3,7 @@ import { stops } from "../data/stops";
 import terminalAImg from "../assets/terminal_A.png";
 import terminalBImg from "../assets/terminal_B.png";
 import { debugPointsTerminal } from "../data/stops";
+import { nodesTerminal } from "../data/stops";
 
 export default function TerminalMapCanvas({ terminal, path }) {
   const canvasRef = useRef(null);
@@ -26,10 +27,25 @@ export default function TerminalMapCanvas({ terminal, path }) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
+      if (path.length > 1) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        path.forEach((nodeId, i) => {
+          const node = nodesTerminal[nodeId];
+          if (!node) return;
+          if (i === 0) {
+            ctx.moveTo(node.x, node.y);
+          } else {
+            ctx.lineTo(node.x, node.y);
+          }
+        });
+        ctx.stroke();
+      }
       debugPointsTerminal.forEach((point) => {
         ctx.beginPath();
         ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "blue";
+        ctx.fillStyle = "red";
         ctx.fill();
 
         ctx.font = "12px Arial";
