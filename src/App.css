@@ -1,6 +1,10 @@
 .App {
   text-align: center;
 }
+body {
+  background-color: #99ccff;
+  color: white;
+}
 
 .App-logo {
   height: 40vmin;
@@ -14,7 +18,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: white;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -39,4 +43,22 @@
 
 .map-container {
   display: inline-flex;
+}
+
+.home-main-div {
+  justify-self: center;
+}
+.home-text-div {
+  text-align: left;
+}
+
+.nav-main-div {
+  justify-self: center;
+}
+.nav-text-div {
+  text-align: left;
+}
+.nav-stops-div {
+  display: flex;
+  column-gap: 16px;
 }

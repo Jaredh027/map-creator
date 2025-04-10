@@ -11,6 +11,8 @@ import { edges } from "./data/stops";
 import { stopToNode } from "./data/stops";
 import { nodes } from "./data/stops";
 import "./App.css";
+import HomePage from "./screens/HomePage";
+import NavPage from "./screens/NavPage";
 
 function findPath(nodes, edges, startNode, endNode) {
   // These is are in the form "P8"
@@ -73,6 +75,9 @@ function App() {
   const [path, setPath] = useState([]);
   const [terminalPath, setTerminalPath] = useState([]);
 
+  const [mainNav, setMainNav] = useState([true]);
+  const [foodNav, setFoodNav] = useState([true]);
+
   useEffect(() => {
     if (startNode && endNode) {
       let newStartNode = startNode.id;
@@ -80,10 +85,13 @@ function App() {
         const newPath = findPath(nodes, edges, startNode, endNode);
         setPath(newPath);
 
-        // Since we are starting outside terminal start node is located at the entrance of terminal
-        newStartNode = debugPointsTerminal.find(
-          (s) => s.id === "T" + endNode?.terminal + "P1"
-        ).id;
+        // Terminal to Terminal travel
+        if (startNode.type === "Terminal" && endNode.type === "Terminal") {
+        } else if (startNode.type === "Terminal" && endNode.type !== "Terminal")
+          // Since we are starting outside terminal start node is located at the entrance of terminal
+          newStartNode = debugPointsTerminal.find(
+            (s) => s.id === "T" + endNode?.terminal + "P1"
+          ).id;
       }
       //For case where starting point is terminal 5 aka right outside of it
       if (
@@ -108,20 +116,29 @@ function App() {
 
   return (
     <div>
-      <h1>Airport Map App</h1>
-      <StopSelector
-        terminals={stopToNode}
-        otherStops={stopToNodeTerminal}
-        onSelectStart={setStartNode}
-        onSelectEnd={setEndNode}
-      />
-      <div className="map-container">
-        {startNode?.terminal !== endNode?.terminal && (
-          <AirportMapCanvas path={path} />
-        )}
+      {mainNav && <HomePage setMainNav={setMainNav} />}
+      {!mainNav && !endNode && <NavPage />}
+      {endNode && (
+        <div>
+          <h1>Airport Map App</h1>
+          <StopSelector
+            terminals={stopToNode}
+            otherStops={stopToNodeTerminal}
+            onSelectStart={setStartNode}
+            onSelectEnd={setEndNode}
+          />
+          <div className="map-container">
+            {startNode?.terminal !== endNode?.terminal && (
+              <AirportMapCanvas path={path} />
+            )}
 
-        <TerminalMapCanvas terminal={endNode?.terminal} path={terminalPath} />
-      </div>
+            <TerminalMapCanvas
+              terminal={endNode?.terminal}
+              path={terminalPath}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
