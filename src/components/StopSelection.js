@@ -6,9 +6,9 @@ export const StopSelection = ({
   currentNavType,
   currentStop,
   handleSelectStop,
+  handleConfirmStop,
   index,
 }) => {
-  const [confirmed, setConfirmed] = useState();
   return (
     <div>
       <h2>Choose a {currentNavType.toLowerCase()} option</h2>
@@ -18,13 +18,28 @@ export const StopSelection = ({
           .map((stop) => (
             <CustomButton
               selected={stop.name === currentStop}
-              onClick={() => handleSelectStop(stop.name, index)}
+              onClick={() => handleSelectStop(stop, index)}
             >
               {stop.name}
             </CustomButton>
           ))}
       </div>
-      {currentStop && <CustomButton>Confirm Selection</CustomButton>}
+      {currentStop && (
+        <div
+          style={{
+            justifyContent: "center",
+            marginTop: "16px",
+            justifyItems: "center",
+          }}
+        >
+          <CustomButton
+            style={{ color: "green", borderColor: "green" }}
+            onClick={() => handleConfirmStop(index)}
+          >
+            Confirm Selection
+          </CustomButton>
+        </div>
+      )}
     </div>
   );
 };

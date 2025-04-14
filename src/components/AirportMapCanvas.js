@@ -54,9 +54,27 @@ export default function AirportMapCanvas({ path }) {
 
       // Draw the path with scaled coordinates
       if (path.length > 1) {
+        // Create a map to track edges (pairs of nodes)
+        const edgeMap = new Map();
+
+        // Create a unique key for each edge
+        const getEdgeKey = (node1, node2) => {
+          return node1 < node2 ? `${node1}-${node2}` : `${node2}-${node1}`;
+        };
+
+        // Count edge occurrences
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentNode = path[i];
+          const nextNode = path[i + 1];
+          const edgeKey = getEdgeKey(currentNode, nextNode);
+
+          edgeMap.set(edgeKey, (edgeMap.get(edgeKey) || 0) + 1);
+        }
+
         ctx.strokeStyle = "blue";
         ctx.lineWidth = 4;
         ctx.beginPath();
+
         path.forEach((nodeId, i) => {
           const node = nodes[nodeId];
           if (!node) return;
@@ -67,6 +85,63 @@ export default function AirportMapCanvas({ path }) {
           }
         });
         ctx.stroke();
+        // Draw bidirectional segments - only edges that appear multiple times
+        ctx.strokeStyle = "purple";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentNode = path[i];
+          const nextNode = path[i + 1];
+          const edgeKey = getEdgeKey(currentNode, nextNode);
+
+          // Only draw offset lines for edges that appear more than once
+          if (edgeMap.get(edgeKey) > 1) {
+            const currentNodeData = nodes[currentNode];
+            const nextNodeData = nodes[nextNode];
+
+            if (!currentNodeData || !nextNodeData) continue;
+
+            // Need to track if we've drawn this edge already to avoid duplicates
+            // We'll use a simple approach: only draw if this is the first occurrence
+            // of the edge in the path
+            let firstOccurrence = true;
+            for (let j = 0; j < i; j++) {
+              if (getEdgeKey(path[j], path[j + 1]) === edgeKey) {
+                firstOccurrence = false;
+                break;
+              }
+            }
+
+            if (firstOccurrence) {
+              // Calculate the perpendicular offset
+              const dx = nextNodeData.x - currentNodeData.x;
+              const dy = nextNodeData.y - currentNodeData.y;
+              const length = Math.sqrt(dx * dx + dy * dy);
+
+              if (length > 0) {
+                // Normalized perpendicular vector (90 degrees rotation)
+                const perpX = -dy / length;
+                const perpY = dx / length;
+
+                // Offset amount
+                const offset = 8; // Pixels offset
+
+                // Draw the offset line
+
+                const startX = (currentNodeData.x + perpX * offset) * scaleX;
+                const startY = (currentNodeData.y + perpY * offset) * scaleY;
+                const endX = (nextNodeData.x + perpX * offset) * scaleX;
+                const endY = (nextNodeData.y + perpY * offset) * scaleY;
+
+                if (i === 0) {
+                  ctx.moveTo(startX, startY);
+                }
+                ctx.lineTo(endX, endY);
+              }
+              ctx.stroke();
+            }
+          }
+        }
       }
 
       // Draw debug points with scaled coordinates

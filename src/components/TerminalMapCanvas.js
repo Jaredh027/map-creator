@@ -5,7 +5,7 @@ import terminalBImg from "../assets/terminal_B.png";
 import { debugPointsTerminal } from "../data/stops";
 import { nodesTerminal } from "../data/stops";
 
-export default function TerminalMapCanvas({ terminal, path }) {
+export default function TerminalMapCanvas({ terminal, path = [] }) {
   const canvasRef = useRef(null);
   const imageSrc = terminal === "A" ? terminalAImg : terminalBImg;
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 700 });
@@ -17,6 +17,8 @@ export default function TerminalMapCanvas({ terminal, path }) {
   // Adjust these values based on your original coordinate system
   const REFERENCE_WIDTH = 439; // Example reference width
   const REFERENCE_HEIGHT = 700; // Example reference height
+
+  console.log("THE PATH", path);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,7 +43,7 @@ export default function TerminalMapCanvas({ terminal, path }) {
         imageRef.current = image;
         setImageLoaded(true);
 
-        // Use a fixed height of 700px
+        // Use a fixed height of 500px
         const fixedHeight = 500;
         // Calculate width based on the image's aspect ratio
         const aspectRatio = image.width / image.height;
@@ -74,9 +76,56 @@ export default function TerminalMapCanvas({ terminal, path }) {
 
       // Draw the path with scaled coordinates
       if (path && path.length > 1) {
+        // Create a map to track edges (pairs of nodes)
+        const edgeMap = new Map();
+
+        // Create a unique key for each edge
+        const getEdgeKey = (node1, node2) => {
+          return node1 < node2 ? `${node1}-${node2}` : `${node2}-${node1}`;
+        };
+
+        // Count edge occurrences
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentNode = path[i];
+          const nextNode = path[i + 1];
+          const edgeKey = getEdgeKey(currentNode, nextNode);
+
+          edgeMap.set(edgeKey, (edgeMap.get(edgeKey) || 0) + 1);
+        }
+
+        // Draw the main path first
         ctx.strokeStyle = "red";
         ctx.lineWidth = 4;
         ctx.beginPath();
+
+        path.forEach((nodeId, i) => {
+          const node = nodesTerminal[nodeId];
+          if (!node) return;
+          if (i === 0) {
+            ctx.moveTo(node.x * scaleX, node.y * scaleY);
+          } else {
+            ctx.lineTo(node.x * scaleX, node.y * scaleY);
+          }
+        });
+
+        ctx.stroke();
+        // First, identify all bidirectional edges
+        const bidirectionalEdges = new Set();
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentNode = path[i];
+          const nextNode = path[i + 1];
+          const edgeKey = getEdgeKey(currentNode, nextNode);
+
+          if (edgeMap.get(edgeKey) > 1) {
+            bidirectionalEdges.add(edgeKey);
+          }
+        }
+
+        // Draw the ENTIRE main path in red (both unidirectional and bidirectional segments)
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+
         path.forEach((nodeId, i) => {
           const node = nodesTerminal[nodeId];
           if (!node) return;
@@ -87,21 +136,81 @@ export default function TerminalMapCanvas({ terminal, path }) {
           }
         });
         ctx.stroke();
+
+        // ONLY draw the offset paths for bidirectional segments in purple
+        ctx.strokeStyle = "purple";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        for (let i = 0; i < path.length - 1; i++) {
+          const currentNode = path[i];
+          const nextNode = path[i + 1];
+          const edgeKey = getEdgeKey(currentNode, nextNode);
+
+          // Only draw offset lines for edges that appear more than once
+          if (edgeMap.get(edgeKey) > 1) {
+            const currentNodeData = nodesTerminal[currentNode];
+            const nextNodeData = nodesTerminal[nextNode];
+
+            if (!currentNodeData || !nextNodeData) continue;
+
+            // Need to track if we've drawn this edge already to avoid duplicates
+            // We'll use a simple approach: only draw if this is the first occurrence
+            // of the edge in the path
+            let firstOccurrence = true;
+            for (let j = 0; j < i; j++) {
+              if (getEdgeKey(path[j], path[j + 1]) === edgeKey) {
+                firstOccurrence = false;
+                break;
+              }
+            }
+
+            if (firstOccurrence) {
+              // Calculate the perpendicular offset
+              const dx = nextNodeData.x - currentNodeData.x;
+              const dy = nextNodeData.y - currentNodeData.y;
+              const length = Math.sqrt(dx * dx + dy * dy);
+
+              if (length > 0) {
+                // Normalized perpendicular vector (90 degrees rotation)
+                const perpX = -dy / length;
+                const perpY = dx / length;
+
+                // Offset amount
+                const offset = 8; // Pixels offset
+
+                // Draw the offset line
+
+                const startX = (currentNodeData.x + perpX * offset) * scaleX;
+                const startY = (currentNodeData.y + perpY * offset) * scaleY;
+                const endX = (nextNodeData.x + perpX * offset) * scaleX;
+                const endY = (nextNodeData.y + perpY * offset) * scaleY;
+
+                if (i === 0) {
+                  ctx.moveTo(startX, startY);
+                }
+                ctx.lineTo(endX, endY);
+              }
+              ctx.stroke();
+            }
+          }
+        }
       }
 
       // Draw debug points with scaled coordinates
-      //   if (debugPointsTerminal && debugPointsTerminal.length) {
-      //     debugPointsTerminal.forEach((point) => {
-      //       ctx.beginPath();
-      //       ctx.arc(point.x * scaleX, point.y * scaleY, 5, 0, 2 * Math.PI);
-      //       ctx.fillStyle = "red";
-      //       ctx.fill();
+      /*
+      if (debugPointsTerminal && debugPointsTerminal.length) {
+        debugPointsTerminal.forEach((point) => {
+          ctx.beginPath();
+          ctx.arc(point.x * scaleX, point.y * scaleY, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = "red";
+          ctx.fill();
 
-      //       ctx.font = "12px Arial";
-      //       ctx.fillStyle = "black";
-      //       ctx.fillText(point.id, point.x * scaleX + 8, point.y * scaleY - 8);
-      //     });
-      //   }
+          ctx.font = "12px Arial";
+          ctx.fillStyle = "black";
+          ctx.fillText(point.id, point.x * scaleX + 8, point.y * scaleY - 8);
+        });
+      }
+      */
     }
 
     // Add click event

@@ -28,16 +28,18 @@ const CustomButton = ({ children, startIcon, selected, ...props }) => (
       borderRadius: 2,
       borderWidth: 1,
       borderStyle: "solid",
-      borderColor: selected ? "#00cc00" : "white",
-      backgroundColor: selected ? "#00cc00" : "transparent",
-      color: "white",
+      borderColor: selected ? "#005DBA" : "#444",
+      backgroundColor: selected ? "#005DBA" : "transparent",
+      color: selected ? "white" : "#444",
       display: "flex",
       marginBottom: 2,
       padding: "8px 15px",
       fontWeight: "bold",
       alignItems: "center",
       "&:hover": {
-        backgroundColor: selected ? "#55DD55" : "rgba(0,204,0,0.5)",
+        backgroundColor: selected
+          ? "rgba(99, 208, 255, 0.5)"
+          : "rgba(99, 208, 255, 0.5)",
       },
     }}
   >
