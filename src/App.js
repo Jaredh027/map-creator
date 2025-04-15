@@ -14,6 +14,7 @@ import { nodes } from "./data/stops";
 import "./App.css";
 import HomePage from "./screens/HomePage";
 import NavPage from "./screens/NavPage";
+import BarcodeScanner from "./components/BarcodeScanner";
 
 function findPath(nodes, edges, startNode, endNode) {
   // These is are in the form "P8"
@@ -188,7 +189,12 @@ function App() {
 
   return (
     <div>
-      {screen[0] && <HomePage doneSelecting={setScreen} screens={screen} />}
+      {screen[0] && (
+        <>
+          <HomePage doneSelecting={setScreen} screens={screen} />
+          <BarcodeScanner />
+        </>
+      )}
       {screen[1] && (
         <NavPage
           doneSelecting={setScreen}
