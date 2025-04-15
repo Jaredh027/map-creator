@@ -1,7 +1,110 @@
 import React, { useEffect, useRef, useState } from "react";
-import { stops, debugPoints } from "../data/stops";
+import { stopToNode, nodes } from "../data/stops";
 import airportImg from "../assets/airport_full.png";
-import { nodes } from "../data/stops";
+
+// Define a list of colors to cycle through for segments.
+const PATH_COLORS = [
+  "#FF5252", // Red
+  "#FF9800", // Orange
+  "#4CAF50", // Green
+  "#2196F3", // Blue
+  "#9C27B0", // Purple
+  "#E91E63", // Pink
+];
+
+const OFFSET = 8; // Fixed offset distance for non-stop nodes
+
+// Helper: Compute the normalized vector from point p1 to p2.
+function getNormalizedVector(p1, p2) {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  return { x: dx / len, y: dy / len, length: len };
+}
+
+// Helper: Get a perpendicular offset vector scaled by offsetDistance.
+function getPerpendicularOffset(vec, offsetDistance) {
+  // For a vector (dx, dy), a perpendicular vector is (-dy, dx)
+  return { x: -vec.y * offsetDistance, y: vec.x * offsetDistance };
+}
+
+// Helper: Compute the intersection of two lines defined by (p1 -> p2) and (p3 -> p4).
+// Returns null if the lines are parallel.
+function getIntersectionPoint(p1, p2, p3, p4) {
+  const denominator =
+    (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+  if (denominator === 0) return null;
+  const t =
+    ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) /
+    denominator;
+  return {
+    x: p1.x + t * (p2.x - p1.x),
+    y: p1.y + t * (p2.y - p1.y),
+  };
+}
+
+// Given the index of a node in the path, compute its drawing coordinate.
+// If the node is a designated stop, return its actual coordinate.
+// Otherwise, compute a perpendicular offset coordinate (using intersection for interior nodes).
+function computePoint(i, path, stopNodeIds) {
+  const nodeId = path[i];
+  const actual = nodes[nodeId];
+  if (!actual) return { x: 0, y: 0 };
+
+  // If the node is a stop, use its actual coordinate.
+  if (stopNodeIds.has(nodeId)) {
+    return { x: actual.x, y: actual.y };
+  }
+
+  // For endpoints, simply offset along the segment.
+  if (i === 0) {
+    const nextNode = nodes[path[i + 1]];
+    if (!nextNode) return { x: actual.x, y: actual.y };
+    const vec = getNormalizedVector(actual, nextNode);
+    const offset = getPerpendicularOffset(vec, OFFSET);
+    return { x: actual.x + offset.x, y: actual.y + offset.y };
+  } else if (i === path.length - 1) {
+    const prevNode = nodes[path[i - 1]];
+    if (!prevNode) return { x: actual.x, y: actual.y };
+    const vec = getNormalizedVector(prevNode, actual);
+    const offset = getPerpendicularOffset(vec, OFFSET);
+    return { x: actual.x + offset.x, y: actual.y + offset.y };
+  } else {
+    // For intermediate non-stop nodes, use two offset lines and compute their intersection.
+    const prevNode = nodes[path[i - 1]];
+    const nextNode = nodes[path[i + 1]];
+    if (!prevNode || !nextNode) return { x: actual.x, y: actual.y };
+
+    const vecIn = getNormalizedVector(prevNode, actual);
+    const vecOut = getNormalizedVector(actual, nextNode);
+    const offsetIn = getPerpendicularOffset(vecIn, OFFSET);
+    const offsetOut = getPerpendicularOffset(vecOut, OFFSET);
+
+    const line1Start = {
+      x: prevNode.x + offsetIn.x,
+      y: prevNode.y + offsetIn.y,
+    };
+    const line1End = { x: actual.x + offsetIn.x, y: actual.y + offsetIn.y };
+    const line2Start = { x: actual.x + offsetOut.x, y: actual.y + offsetOut.y };
+    const line2End = {
+      x: nextNode.x + offsetOut.x,
+      y: nextNode.y + offsetOut.y,
+    };
+
+    const intersection = getIntersectionPoint(
+      line1Start,
+      line1End,
+      line2Start,
+      line2End
+    );
+    return (
+      intersection || {
+        x: actual.x + (offsetIn.x + offsetOut.x) / 2,
+        y: actual.y + (offsetIn.y + offsetOut.y) / 2,
+      }
+    );
+  }
+}
 
 export default function AirportMapCanvas({ path = [] }) {
   const canvasRef = useRef(null);
@@ -12,239 +115,111 @@ export default function AirportMapCanvas({ path = [] }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
 
-    // Create image if it doesn't exist yet
+    // Load the airport image if not already loaded.
     if (!imageRef.current) {
       const image = new Image();
       image.src = airportImg;
       image.onload = () => {
         imageRef.current = image;
         setImageLoaded(true);
-
-        // Using a fixed height approach
-        const fixedHeight = 500; // Set your desired fixed height here
+        // Use a fixed height with proportional width.
+        const fixedHeight = 500;
         const aspectRatio = image.width / image.height;
         const calculatedWidth = fixedHeight * aspectRatio;
-
-        setCanvasSize({
-          width: calculatedWidth,
-          height: fixedHeight,
-        });
+        setCanvasSize({ width: calculatedWidth, height: fixedHeight });
       };
-    }
-    // If image is already loaded, render everything
-    else if (imageLoaded && imageRef.current) {
+    } else if (imageLoaded && imageRef.current) {
       const image = imageRef.current;
-
-      // Set canvas dimensions to match our state
+      // Set canvas dimensions.
       canvas.width = canvasSize.width;
       canvas.height = canvasSize.height;
 
-      // Calculate scaling factors
+      // Compute scaling factors based on the image's original dimensions.
       const scaleX = canvasSize.width / image.width;
       const scaleY = canvasSize.height / image.height;
 
-      // Clear canvas
+      // Clear the canvas and draw the background image.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw the image properly sized
       ctx.drawImage(image, 0, 0, canvasSize.width, canvasSize.height);
 
-      // Draw the path with scaled coordinates
+      // Only draw the path if there are at least two nodes.
       if (path && path.length > 1) {
-        // Create a map to track bidirectional edges
-        const edgeMap = new Map();
+        // Create a set of stop node IDs from the stops data.
+        const stopNodeIds = new Set(stopToNode.map((stop) => stop.id));
 
-        // Create a unique key for each edge
-        const getEdgeKey = (node1, node2) => {
-          return node1 < node2 ? `${node1}-${node2}` : `${node2}-${node1}`;
-        };
-
-        // First pass: count edge occurrences
-        for (let i = 0; i < path.length - 1; i++) {
-          const currentNode = path[i];
-          const nextNode = path[i + 1];
-          const edgeKey = getEdgeKey(currentNode, nextNode);
-
-          edgeMap.set(edgeKey, (edgeMap.get(edgeKey) || 0) + 1);
+        // Determine the indices where stops occur in the path.
+        let stopIndices = [];
+        for (let i = 0; i < path.length; i++) {
+          if (stopNodeIds.has(path[i])) {
+            stopIndices.push(i);
+          }
+        }
+        // Always include the first and last nodes as stops.
+        if (stopIndices.length === 0 || stopIndices[0] !== 0) {
+          stopIndices.unshift(0);
+        }
+        if (stopIndices[stopIndices.length - 1] !== path.length - 1) {
+          stopIndices.push(path.length - 1);
         }
 
-        // Draw the main path in blue
-        ctx.strokeStyle = "blue";
-        ctx.lineWidth = 4;
-        ctx.beginPath();
+        // Draw each segment (from one stop to the next) in reverse order so that
+        // the earliest segments are drawn last and appear on top.
+        for (let seg = stopIndices.length - 2; seg >= 0; seg--) {
+          const segStart = stopIndices[seg];
+          const segEnd = stopIndices[seg + 1];
+          const segmentPoints = [];
+          for (let i = segStart; i <= segEnd; i++) {
+            segmentPoints.push(computePoint(i, path, stopNodeIds));
+          }
+          if (segmentPoints.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(
+              segmentPoints[0].x * scaleX,
+              segmentPoints[0].y * scaleY
+            );
+            for (let i = 1; i < segmentPoints.length; i++) {
+              ctx.lineTo(
+                segmentPoints[i].x * scaleX,
+                segmentPoints[i].y * scaleY
+              );
+            }
+            ctx.strokeStyle = PATH_COLORS[seg % PATH_COLORS.length];
+            ctx.lineWidth = 4;
+            ctx.lineJoin = "round";
+            ctx.stroke();
+          }
+        }
 
-        path.forEach((nodeId, i) => {
-          const node = nodes[nodeId];
+        // Finally, draw stop markers so they appear on top.
+        stopIndices.forEach((i) => {
+          const node = nodes[path[i]];
           if (!node) return;
-          if (i === 0) {
-            ctx.moveTo(node.x * scaleX, node.y * scaleY);
-          } else {
-            ctx.lineTo(node.x * scaleX, node.y * scaleY);
-          }
-        });
-        ctx.stroke();
-
-        // Find bidirectional segments in the path
-        const bidirectionalSegments = [];
-        let currentSegment = [];
-
-        for (let i = 0; i < path.length - 1; i++) {
-          const currentNode = path[i];
-          const nextNode = path[i + 1];
-          const edgeKey = getEdgeKey(currentNode, nextNode);
-
-          if (edgeMap.get(edgeKey) > 1) {
-            // If we're starting a new segment
-            if (currentSegment.length === 0) {
-              currentSegment.push(currentNode);
-            }
-            currentSegment.push(nextNode);
-          } else if (currentSegment.length > 0) {
-            // End of a bidirectional segment
-            bidirectionalSegments.push([...currentSegment]);
-            currentSegment = [];
-          }
-        }
-
-        // Add the last segment if it exists
-        if (currentSegment.length > 0) {
-          bidirectionalSegments.push([...currentSegment]);
-        }
-
-        // Draw each bidirectional segment as a continuous purple path
-        ctx.strokeStyle = "purple";
-        ctx.lineWidth = 4;
-
-        // Constant offset distance
-        const OFFSET = 8;
-
-        bidirectionalSegments.forEach((segment) => {
-          if (segment.length < 2) return;
-
+          // Outer circle.
           ctx.beginPath();
-
-          // For each node in the segment
-          for (let i = 0; i < segment.length; i++) {
-            const nodeId = segment[i];
-            const node = nodes[nodeId];
-            if (!node) continue;
-
-            // Calculate offset based on neighboring points
-            let offsetX = 0;
-            let offsetY = 0;
-
-            if (i === 0) {
-              // First node - use direction to next node
-              const nextNode = nodes[segment[i + 1]];
-              if (nextNode) {
-                const dx = nextNode.x - node.x;
-                const dy = nextNode.y - node.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-
-                // Perpendicular vector
-                offsetX = (-dy / length) * OFFSET;
-                offsetY = (dx / length) * OFFSET;
-              }
-            } else if (i === segment.length - 1) {
-              // Last node - use direction from previous node
-              const prevNode = nodes[segment[i - 1]];
-              if (prevNode) {
-                const dx = node.x - prevNode.x;
-                const dy = node.y - prevNode.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-
-                // Perpendicular vector
-                offsetX = (-dy / length) * OFFSET;
-                offsetY = (dx / length) * OFFSET;
-              }
-            } else {
-              // Middle node - average direction from prev to next
-              const prevNode = nodes[segment[i - 1]];
-              const nextNode = nodes[segment[i + 1]];
-
-              if (prevNode && nextNode) {
-                // Vector from prev to current
-                const dx1 = node.x - prevNode.x;
-                const dy1 = node.y - prevNode.y;
-                const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-
-                // Vector from current to next
-                const dx2 = nextNode.x - node.x;
-                const dy2 = nextNode.y - node.y;
-                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-                // Normalized vectors
-                const nx1 = dx1 / len1;
-                const ny1 = dy1 / len1;
-                const nx2 = dx2 / len2;
-                const ny2 = dy2 / len2;
-
-                // Perpendicular vectors
-                const px1 = -ny1;
-                const py1 = nx1;
-                const px2 = -ny2;
-                const py2 = nx2;
-
-                // Average of the perpendicular vectors
-                const avgPx = (px1 + px2) / 2;
-                const avgPy = (py1 + py2) / 2;
-                const avgLength = Math.sqrt(avgPx * avgPx + avgPy * avgPy);
-
-                // Normalize and apply offset
-                offsetX = (avgPx / avgLength) * OFFSET;
-                offsetY = (avgPy / avgLength) * OFFSET;
-              }
-            }
-
-            const finalX = (node.x + offsetX) * scaleX;
-            const finalY = (node.y + offsetY) * scaleY;
-
-            if (i === 0) {
-              ctx.moveTo(finalX, finalY);
-            } else {
-              ctx.lineTo(finalX, finalY);
-            }
-          }
-
-          ctx.stroke();
-        });
-      }
-
-      // Draw debug points if needed
-      /*
-      if (debugPoints && debugPoints.length) {
-        debugPoints.forEach((point) => {
-          ctx.beginPath();
-          ctx.arc(point.x * scaleX, point.y * scaleY, 5, 0, 2 * Math.PI);
-          ctx.fillStyle = "blue";
+          ctx.arc(node.x * scaleX, node.y * scaleY, 8, 0, 2 * Math.PI);
+          ctx.fillStyle = "#333333";
           ctx.fill();
-
-          ctx.font = "12px Arial";
-          ctx.fillStyle = "black";
-          ctx.fillText(point.id, point.x * scaleX + 8, point.y * scaleY - 8);
+          // Inner circle.
+          ctx.beginPath();
+          ctx.arc(node.x * scaleX, node.y * scaleY, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
         });
       }
-      */
     }
 
-    // Add click handler for debugging
+    // Optional: Add a click handler to log the original image coordinates for debugging.
     const handleClick = (e) => {
       if (!imageLoaded || !imageRef.current) return;
-
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-
-      // Convert to original image coordinates
       const scaleX = canvasSize.width / imageRef.current.width;
       const scaleY = canvasSize.height / imageRef.current.height;
-
       const originalX = x / scaleX;
       const originalY = y / scaleY;
-
       console.log(`Clicked at: x=${x.toFixed(0)}, y=${y.toFixed(0)}`);
       console.log(
         `Original coordinates: x=${originalX.toFixed(0)}, y=${originalY.toFixed(
@@ -258,7 +233,13 @@ export default function AirportMapCanvas({ path = [] }) {
   }, [path, canvasSize, imageLoaded]);
 
   return (
-    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
       <canvas
         ref={canvasRef}
         width={canvasSize.width}

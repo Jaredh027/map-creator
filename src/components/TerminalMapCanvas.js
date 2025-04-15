@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { nodesTerminal } from "../data/stops";
 import { stopToNodeTerminal } from "../data/stops";
 
-// Define a list of colors to cycle through
+// Define a list of colors to cycle through for segments.
 const PATH_COLORS = [
   "#FF5252", // Red
   "#FF9800", // Orange
@@ -11,6 +11,97 @@ const PATH_COLORS = [
   "#9C27B0", // Purple
   "#E91E63", // Pink
 ];
+
+const OFFSET = 6; // Fixed offset for non-stop nodes
+
+// Helper: Compute the normalized vector (with magnitude) from p1 to p2.
+function getNormalizedVector(p1, p2) {
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  return { x: dx / len, y: dy / len, length: len };
+}
+
+// Helper: Get a perpendicular offset vector scaled by offsetDistance.
+// For vector (dx, dy), a perpendicular is (-dy, dx).
+function getPerpendicularOffset(vec, offsetDistance) {
+  return { x: -vec.y * offsetDistance, y: vec.x * offsetDistance };
+}
+
+// Helper: Compute the intersection of two lines defined by (p1->p2) and (p3->p4).
+// Returns null if the lines are parallel.
+function getIntersectionPoint(p1, p2, p3, p4) {
+  const denominator =
+    (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+  if (denominator === 0) return null; // lines are parallel
+  const t =
+    ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) /
+    denominator;
+  return {
+    x: p1.x + t * (p2.x - p1.x),
+    y: p1.y + t * (p2.y - p1.y),
+  };
+}
+
+// Given the index of a node within a segment, compute its drawn position.
+// For nodes that are designated as stops, we use the actual coordinate so that
+// the colored line touches the stop. For non-stop nodes, we compute an offset.
+function computePoint(i, path, stopNodeIds) {
+  const nodeId = path[i];
+  const actual = nodesTerminal[nodeId];
+  // If the node is a stop, always use its actual coordinate.
+  if (stopNodeIds.has(nodeId)) {
+    return { x: actual.x, y: actual.y };
+  }
+  // For endpoints, offset based on the adjacent segment.
+  if (i === 0) {
+    const nextNode = nodesTerminal[path[i + 1]];
+    if (!nextNode) return { x: actual.x, y: actual.y };
+    const vec = getNormalizedVector(actual, nextNode);
+    const offset = getPerpendicularOffset(vec, OFFSET);
+    return { x: actual.x + offset.x, y: actual.y + offset.y };
+  } else if (i === path.length - 1) {
+    const prevNode = nodesTerminal[path[i - 1]];
+    if (!prevNode) return { x: actual.x, y: actual.y };
+    const vec = getNormalizedVector(prevNode, actual);
+    const offset = getPerpendicularOffset(vec, OFFSET);
+    return { x: actual.x + offset.x, y: actual.y + offset.y };
+  } else {
+    // For interior nodes that are not stops, compute an intersection of offset lines.
+    const prevNode = nodesTerminal[path[i - 1]];
+    const nextNode = nodesTerminal[path[i + 1]];
+    if (!prevNode || !nextNode) return { x: actual.x, y: actual.y };
+
+    const vecIn = getNormalizedVector(prevNode, actual);
+    const vecOut = getNormalizedVector(actual, nextNode);
+    const offsetIn = getPerpendicularOffset(vecIn, OFFSET);
+    const offsetOut = getPerpendicularOffset(vecOut, OFFSET);
+
+    const line1Start = {
+      x: prevNode.x + offsetIn.x,
+      y: prevNode.y + offsetIn.y,
+    };
+    const line1End = { x: actual.x + offsetIn.x, y: actual.y + offsetIn.y };
+    const line2Start = { x: actual.x + offsetOut.x, y: actual.y + offsetOut.y };
+    const line2End = {
+      x: nextNode.x + offsetOut.x,
+      y: nextNode.y + offsetOut.y,
+    };
+
+    const intersection = getIntersectionPoint(
+      line1Start,
+      line1End,
+      line2Start,
+      line2End
+    );
+    return (
+      intersection || {
+        x: actual.x + (offsetIn.x + offsetOut.x) / 2,
+        y: actual.y + (offsetIn.y + offsetOut.y) / 2,
+      }
+    );
+  }
+}
 
 export default function TerminalMapCanvas({ terminal, path = [] }) {
   const canvasRef = useRef(null);
@@ -23,279 +114,126 @@ export default function TerminalMapCanvas({ terminal, path = [] }) {
   const imageRef = useRef(null);
   const currentTerminalRef = useRef(terminal);
 
-  // Reference dimensions for coordinate scaling
+  // Reference dimensions for coordinate scaling.
   const REFERENCE_WIDTH = 439;
   const REFERENCE_HEIGHT = 700;
 
-  console.log("Path to render:", path);
-
-  // Create a set of stop node IDs for faster lookups
+  // Create a set of stop node IDs for quick lookup.
   const stopNodeIds = new Set(stopToNodeTerminal.map((stop) => stop.id));
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
 
-    // Check if terminal changed
+    // Check if the terminal has changed.
     const terminalChanged = currentTerminalRef.current !== terminal;
     currentTerminalRef.current = terminal;
 
-    // Load new image if needed
+    // Load new image if needed.
     if (!imageRef.current || terminalChanged) {
       if (terminalChanged) {
         setImageLoaded(false);
       }
-
       const image = new Image();
       image.src = imageSrc;
       image.onload = () => {
         imageRef.current = image;
         setImageLoaded(true);
-
-        // Fixed height of 500px with proportional width
+        // Fixed display height with proportional width.
         const fixedHeight = 500;
         const aspectRatio = image.width / image.height;
         const calculatedWidth = fixedHeight * aspectRatio;
-
-        setCanvasSize({
-          width: calculatedWidth,
-          height: fixedHeight,
-        });
+        setCanvasSize({ width: calculatedWidth, height: fixedHeight });
       };
     } else if (imageLoaded && imageRef.current) {
-      const image = imageRef.current;
-
-      // Set canvas dimensions
+      // Set canvas dimensions and compute scaling factors.
       canvas.width = canvasSize.width;
       canvas.height = canvasSize.height;
-
-      // Calculate scaling factors
       const scaleX = canvasSize.width / REFERENCE_WIDTH;
       const scaleY = canvasSize.height / REFERENCE_HEIGHT;
 
-      // Clear canvas
+      // Clear and redraw background image.
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        imageRef.current,
+        0,
+        0,
+        canvasSize.width,
+        canvasSize.height
+      );
 
-      // Draw the terminal map image
-      ctx.drawImage(image, 0, 0, canvasSize.width, canvasSize.height);
-
-      // Draw the path with color changes at stop nodes
       if (path && path.length > 1) {
-        // Create an edge map to track segment occurrences
-        const edgeMap = new Map();
-
-        // Create a unique key for each edge
-        const getEdgeKey = (node1, node2) => {
-          return node1 < node2 ? `${node1}-${node2}` : `${node2}-${node1}`;
-        };
-
-        // First pass: identify all segments and count occurrences
-        for (let i = 0; i < path.length - 1; i++) {
-          const currentNode = path[i];
-          const nextNode = path[i + 1];
-          const edgeKey = getEdgeKey(currentNode, nextNode);
-
-          // Track both the count and the original order in the path
-          if (!edgeMap.has(edgeKey)) {
-            edgeMap.set(edgeKey, {
-              count: 1,
-              pairs: [{ from: currentNode, to: nextNode, index: i }],
-            });
-          } else {
-            const edgeData = edgeMap.get(edgeKey);
-            edgeData.count += 1;
-            edgeData.pairs.push({ from: currentNode, to: nextNode, index: i });
-            edgeMap.set(edgeKey, edgeData);
+        // Determine indices where stops occur.
+        const stopIndices = [];
+        for (let i = 0; i < path.length; i++) {
+          if (stopNodeIds.has(path[i])) {
+            stopIndices.push(i);
           }
         }
+        // Ensure the first and last nodes are considered stops.
+        if (stopIndices.length === 0 || stopIndices[0] !== 0) {
+          stopIndices.unshift(0);
+        }
+        if (stopIndices[stopIndices.length - 1] !== path.length - 1) {
+          stopIndices.push(path.length - 1);
+        }
 
-        // Identify bidirectional edges
-        const bidirectionalEdges = new Array();
-        for (const [key, data] of edgeMap.entries()) {
-          if (data.count > 1) {
-            bidirectionalEdges.push({
-              key,
-              pairs: data.pairs,
-            });
+        // Draw each segment between stops in reverse order so that
+        // the earliest segments (first paths) are drawn last and appear on top.
+        for (let seg = stopIndices.length - 2; seg >= 0; seg--) {
+          const segStart = stopIndices[seg];
+          const segEnd = stopIndices[seg + 1];
+          const segmentPoints = [];
+          for (let i = segStart; i <= segEnd; i++) {
+            segmentPoints.push(computePoint(i, path, stopNodeIds));
           }
-        }
-
-        // Log for debugging
-        console.log("Bidirectional edges:", bidirectionalEdges);
-
-        // Find all stop node indices in the path
-        const stopNodeIndices = [];
-        path.forEach((nodeId, index) => {
-          if (stopNodeIds.has(nodeId)) {
-            stopNodeIndices.push(index);
-          }
-        });
-
-        // Add starting point to segments if it's not already a stop node
-        if (stopNodeIndices.length === 0 || stopNodeIndices[0] !== 0) {
-          stopNodeIndices.unshift(0);
-        }
-
-        // Add ending point to segments if it's not already a stop node
-        if (stopNodeIndices[stopNodeIndices.length - 1] !== path.length - 1) {
-          stopNodeIndices.push(path.length - 1);
-        }
-
-        // Set up path rendering
-        ctx.lineWidth = 5;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        // Step 1: Draw main path with color changes at stop nodes
-        // for (let segIdx = 0; segIdx < stopNodeIndices.length - 1; segIdx++) {
-        //   const startIdx = stopNodeIndices[segIdx];
-        //   const endIdx = stopNodeIndices[segIdx + 1];
-        //   const colorIdx = segIdx % PATH_COLORS.length;
-
-        //   ctx.beginPath();
-
-        //   // Get first node in segment
-        //   const firstNode = nodesTerminal[path[startIdx]];
-        //   if (!firstNode) continue;
-
-        //   ctx.moveTo(firstNode.x * scaleX, firstNode.y * scaleY);
-
-        //   // Draw all intermediate points
-        //   for (let j = startIdx + 1; j <= endIdx; j++) {
-        //     const nodeId = path[j];
-        //     const node = nodesTerminal[nodeId];
-        //     if (!node) continue;
-
-        //     ctx.lineTo(node.x * scaleX, node.y * scaleY);
-        //   }
-
-        //   ctx.strokeStyle = PATH_COLORS[colorIdx];
-        //   ctx.stroke();
-        // }
-
-        // Step 2: Draw bidirectional segments with offset
-        // Use a fixed offset distance from the original path
-        const OFFSET = 6;
-
-        // Draw each bidirectional edge with offset
-        bidirectionalEdges.forEach((edge) => {
-          // For each pair of nodes in this bidirectional edge
-          edge.pairs.forEach((pair) => {
-            const fromNode = nodesTerminal[pair.from];
-            const toNode = nodesTerminal[pair.to];
-
-            if (!fromNode || !toNode) return;
-
-            // Calculate which segment (between stop nodes) this edge belongs to
-            let segmentIndex = 0;
-            for (let i = 0; i < stopNodeIndices.length - 1; i++) {
-              if (
-                pair.index >= stopNodeIndices[i] &&
-                pair.index < stopNodeIndices[i + 1]
-              ) {
-                segmentIndex = i;
-                break;
-              }
-            }
-
-            // Get the color for this segment
-            const colorIdx = segmentIndex % PATH_COLORS.length;
-
-            // Calculate direction vector
-            const dx = toNode.x - fromNode.x;
-            const dy = toNode.y - fromNode.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-
-            if (length === 0) return;
-
-            // Calculate perpendicular offset
-            const offsetX = (-dy / length) * OFFSET;
-            const offsetY = (dx / length) * OFFSET;
-
-            // Draw offset line
+          if (segmentPoints.length > 1) {
             ctx.beginPath();
             ctx.moveTo(
-              (fromNode.x + offsetX) * scaleX,
-              (fromNode.y + offsetY) * scaleY
+              segmentPoints[0].x * scaleX,
+              segmentPoints[0].y * scaleY
             );
-            ctx.lineTo(
-              (toNode.x + offsetX) * scaleX,
-              (toNode.y + offsetY) * scaleY
-            );
-
-            // Use dashed line for bidirectional segments
-            ctx.setLineDash([8, 4]);
-            ctx.strokeStyle = PATH_COLORS[colorIdx];
-            ctx.lineWidth = 5; // Slightly thinner line for the offset path
-            ctx.stroke();
-
-            // Reset line style
-            ctx.setLineDash([]);
+            for (let i = 1; i < segmentPoints.length; i++) {
+              ctx.lineTo(
+                segmentPoints[i].x * scaleX,
+                segmentPoints[i].y * scaleY
+              );
+            }
+            ctx.strokeStyle = PATH_COLORS[seg % PATH_COLORS.length];
             ctx.lineWidth = 5;
-          });
+            ctx.lineJoin = "round";
+            ctx.stroke();
+          }
+        }
+
+        // Draw stop markers (always on top).
+        stopIndices.forEach((i) => {
+          const node = nodesTerminal[path[i]];
+          // Outer circle.
+          ctx.beginPath();
+          ctx.arc(node.x * scaleX, node.y * scaleY, 8, 0, 2 * Math.PI);
+          ctx.fillStyle = "#333333";
+          ctx.fill();
+          // Inner circle.
+          ctx.beginPath();
+          ctx.arc(node.x * scaleX, node.y * scaleY, 6, 0, 2 * Math.PI);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
         });
-
-        // Draw nodes
-        // path.forEach((nodeId) => {
-        //   const node = nodesTerminal[nodeId];
-        //   if (!node) return;
-
-        //   // Special visualization for stop nodes
-        //   if (stopNodeIds.has(nodeId)) {
-        //     // Draw larger indicator for stop nodes
-        //     ctx.beginPath();
-        //     ctx.arc(node.x * scaleX, node.y * scaleY, 8, 0, 2 * Math.PI);
-        //     ctx.fillStyle = "#333333";
-        //     ctx.fill();
-
-        //     ctx.beginPath();
-        //     ctx.arc(node.x * scaleX, node.y * scaleY, 6, 0, 2 * Math.PI);
-        //     ctx.fillStyle = "#FFFFFF";
-        //     ctx.fill();
-
-        //     // Find which segment this stop corresponds to
-        //     const nodeIndex = path.indexOf(nodeId);
-        //     const segmentIndex = stopNodeIndices.indexOf(nodeIndex);
-
-        //     ctx.beginPath();
-        //     ctx.arc(node.x * scaleX, node.y * scaleY, 4, 0, 2 * Math.PI);
-        //     // Use the segment color
-        //     ctx.fillStyle =
-        //       PATH_COLORS[Math.max(0, segmentIndex - 1) % PATH_COLORS.length];
-        //     ctx.fill();
-        //   } else {
-        //     // Standard node visualization
-        //     ctx.beginPath();
-        //     ctx.arc(node.x * scaleX, node.y * scaleY, 4, 0, 2 * Math.PI);
-        //     ctx.fillStyle = "#333333";
-        //     ctx.fill();
-
-        //     ctx.beginPath();
-        //     ctx.arc(node.x * scaleX, node.y * scaleY, 2, 0, 2 * Math.PI);
-        //     ctx.fillStyle = "#FFFFFF";
-        //     ctx.fill();
-        //   }
-        // });
       }
     }
 
-    // Add click handler for debugging
+    // Optional: Add a click handler to log the map coordinates for debugging.
     const handleClick = (e) => {
       if (!imageLoaded || !imageRef.current) return;
-
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-
-      // Convert to original reference coordinates
       const scaleX = canvasSize.width / REFERENCE_WIDTH;
       const scaleY = canvasSize.height / REFERENCE_HEIGHT;
-
       const originalX = x / scaleX;
       const originalY = y / scaleY;
-
       console.log(`Clicked at: x=${x.toFixed(0)}, y=${y.toFixed(0)}`);
       console.log(
         `Original coordinates: x=${originalX.toFixed(0)}, y=${originalY.toFixed(
@@ -306,7 +244,7 @@ export default function TerminalMapCanvas({ terminal, path = [] }) {
 
     canvas.addEventListener("click", handleClick);
     return () => canvas.removeEventListener("click", handleClick);
-  }, [imageSrc, path, terminal, canvasSize, imageLoaded, stopToNodeTerminal]);
+  }, [imageSrc, path, terminal, canvasSize, imageLoaded]);
 
   return (
     <div className="flex justify-center w-full">

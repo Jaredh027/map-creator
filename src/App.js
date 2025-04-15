@@ -182,7 +182,7 @@ function App() {
 
   useEffect(() => {
     //Setting start stop as Terminal B for now aka the kiosk location
-    const startStop = stopToNode.find((s) => s.id === "P1");
+    const startStop = stopToNode.find((s) => s.id === "PSB");
     setStartNode(startStop);
   }, []);
 
