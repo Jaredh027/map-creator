@@ -49,7 +49,10 @@ body {
   justify-self: center;
 }
 .home-text-div {
-  text-align: left;
+  text-align: center;
+  row-gap: 16px;
+  display: grid;
+  justify-items: center;
 }
 
 .nav-main-div {

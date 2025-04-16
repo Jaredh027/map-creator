@@ -4,7 +4,7 @@ import { stopToNode, stopType } from "../data/stops";
 import { StopTypeSelection } from "../components/StopTypeSelection";
 import { StopSelection } from "../components/StopSelection";
 
-const NavPage = ({ doneSelecting, screens, setNodes }) => {
+const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
   const [navType, setNavType] = useState([null]);
   const [selectedStops, setSelectedStops] = useState([]);
   const [confirmedStops, setConfirmedSpots] = useState([]);
@@ -56,6 +56,10 @@ const NavPage = ({ doneSelecting, screens, setNodes }) => {
     console.log(nodesArr);
     setNodes(nodesArr);
   };
+
+  const flightNumber = userInformation[0];
+  const gate = userInformation[1];
+  const flightTime = userInformation[2];
 
   return (
     <div className="nav-main-div">

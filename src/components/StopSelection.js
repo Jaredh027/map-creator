@@ -17,7 +17,7 @@ export const StopSelection = ({
           .filter((stop) => stop.type === currentNavType)
           .map((stop) => (
             <CustomButton
-              selected={stop.name === currentStop}
+              selected={stop.name === currentStop?.name}
               onClick={() => handleSelectStop(stop, index)}
             >
               {stop.name}

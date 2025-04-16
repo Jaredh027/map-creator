@@ -12,7 +12,7 @@ const PATH_COLORS = [
   "#E91E63", // Pink
 ];
 
-const OFFSET = 8; // Fixed offset distance for non-stop nodes
+const OFFSET = 4; // Fixed offset distance for non-stop nodes
 
 // Helper: Compute the normalized vector from point p1 to p2.
 function getNormalizedVector(p1, p2) {
@@ -106,7 +106,7 @@ function computePoint(i, path, stopNodeIds) {
   }
 }
 
-export default function AirportMapCanvas({ path = [] }) {
+export default function AirportMapCanvas({ path = [], colorArr }) {
   const canvasRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 500 });
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -166,10 +166,12 @@ export default function AirportMapCanvas({ path = [] }) {
 
         // Draw each segment (from one stop to the next) in reverse order so that
         // the earliest segments are drawn last and appear on top.
+        let actualSegLineCount = 0;
         for (let seg = stopIndices.length - 2; seg >= 0; seg--) {
           const segStart = stopIndices[seg];
           const segEnd = stopIndices[seg + 1];
           const segmentPoints = [];
+
           for (let i = segStart; i <= segEnd; i++) {
             segmentPoints.push(computePoint(i, path, stopNodeIds));
           }
@@ -185,7 +187,20 @@ export default function AirportMapCanvas({ path = [] }) {
                 segmentPoints[i].y * scaleY
               );
             }
-            ctx.strokeStyle = PATH_COLORS[seg % PATH_COLORS.length];
+
+            console.log(
+              actualSegLineCount,
+              colorArr[actualSegLineCount],
+              PATH_COLORS[colorArr[actualSegLineCount]],
+              colorArr
+            );
+            if (segmentPoints.length <= 2) {
+              ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
+            } else {
+              ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
+              actualSegLineCount += 1;
+            }
+
             ctx.lineWidth = 4;
             ctx.lineJoin = "round";
             ctx.stroke();

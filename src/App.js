@@ -15,6 +15,17 @@ import "./App.css";
 import HomePage from "./screens/HomePage";
 import NavPage from "./screens/NavPage";
 import BarcodeScanner from "./components/BarcodeScanner";
+import CustomPopup from "./components/CustomPopup";
+import CustomButton from "./components/CustomButton";
+
+const PATH_COLORS = [
+  "#FF5252", // Red
+  "#FF9800", // Orange
+  "#4CAF50", // Green
+  "#2196F3", // Blue
+  "#9C27B0", // Purple
+  "#E91E63", // Pink
+];
 
 function findPath(nodes, edges, startNode, endNode) {
   // These is are in the form "P8"
@@ -86,8 +97,12 @@ function App() {
   const [nodes, setNodes] = useState([]);
   const [path, setPath] = useState([]);
   const [terminalPath, setTerminalPath] = useState([]);
+  const [mainPathColors, setMainPathColors] = useState([]);
+  const [subPathColors, setSubPathColors] = useState([]);
 
   const [screen, setScreen] = useState([true, false, false]); // Fixed screen state initialization
+  const [scannedInfo, setScannedInfo] = useState(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     console.log("nodes", nodes);
@@ -100,7 +115,11 @@ function App() {
     let fullTerminalPath = [];
     let currentStartNode = startNode;
 
+    let mainPathColor = [];
+    let subPathColor = [];
+
     // Process each stop as a waypoint in order
+    let colorIndex = 0;
     for (let i = 0; i < nodes.length; i++) {
       const currentStop = nodes[i];
 
@@ -114,6 +133,7 @@ function App() {
             currentStop
           );
           fullPath = [...fullPath, ...segmentPath];
+          mainPathColor.push(colorIndex);
 
           // Select the appropriate terminal entry point
           let terminalEntryNode;
@@ -142,8 +162,10 @@ function App() {
             terminalEntryNode.id,
             currentStop.id
           );
-
+          subPathColor.push(colorIndex);
           fullTerminalPath = [...fullTerminalPath, ...terminalSegmentPath];
+
+          colorIndex += 1;
         } else {
           // Same terminal navigation
           let terminalEntryNode;
@@ -167,8 +189,9 @@ function App() {
             terminalEntryNode.id,
             currentStop.id
           );
-
           fullTerminalPath = [...fullTerminalPath, ...terminalSegmentPath];
+          subPathColor.push(colorIndex);
+          colorIndex += 1;
         }
       }
 
@@ -179,6 +202,8 @@ function App() {
     // Set paths once, after processing all stops
     setPath(fullPath);
     setTerminalPath(fullTerminalPath);
+    setMainPathColors(mainPathColor);
+    setSubPathColors(subPathColor);
   }, [nodes, startNode]); // Also depend on startNode since it's used in the effect
 
   useEffect(() => {
@@ -187,12 +212,57 @@ function App() {
     setStartNode(startStop);
   }, []);
 
+  useEffect(() => {
+    if (scannedInfo) {
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }, [scannedInfo]);
+
+  const handleScannedBarcode = (information) => {
+    setScannedInfo(information);
+  };
+
+  const handleYesPopup = () => {
+    setScreen([false, true, false]);
+    setOpen(false);
+  };
+
+  const handleNoPopup = () => {
+    setScannedInfo(null);
+    setOpen(false);
+  };
+
   return (
-    <div>
+    <div
+      style={{
+        justifyItems: "center",
+        alignContent: "center",
+        height: "100vh",
+      }}
+    >
       {screen[0] && (
         <>
-          <HomePage doneSelecting={setScreen} screens={screen} />
-          <BarcodeScanner />
+          <HomePage
+            doneSelecting={setScreen}
+            screens={screen}
+            setUserInformaiton={handleScannedBarcode}
+          />
+
+          {scannedInfo && (
+            <CustomPopup
+              message={[
+                "Is this information correct?",
+                "Flight: " + scannedInfo[0],
+                "Gate: " + scannedInfo[1],
+                "Departure: " + scannedInfo[2],
+              ]}
+              open={open}
+              handleYes={handleYesPopup}
+              handleNo={handleNoPopup}
+            />
+          )}
         </>
       )}
       {screen[1] && (
@@ -200,20 +270,16 @@ function App() {
           doneSelecting={setScreen}
           screens={screen}
           setNodes={setNodes}
+          userInformation={scannedInfo}
         />
       )}
       {screen[2] && (
-        <div>
-          <h1>Airport Map App</h1>
-          <StopSelector
-            terminals={stopToNode}
-            otherStops={stopToNodeTerminal}
-            onSelectStart={setStartNode}
-            onSelectEnd={setEndNode}
-          />
+        <div style={{ justifyItems: "center" }}>
+          <h1>Here is a map with your designated stops!</h1>
+
           <div className="map-container">
             {startNode?.terminal !== endNode?.terminal && (
-              <AirportMapCanvas path={path} />
+              <AirportMapCanvas path={path} colorArr={mainPathColors} />
             )}
 
             <TerminalMapCanvas
@@ -222,7 +288,28 @@ function App() {
                 (nodes.length > 0 ? nodes[nodes.length - 1]?.terminal : null)
               }
               path={terminalPath}
+              colorArr={subPathColors}
             />
+          </div>
+          <div style={{ display: "flex", columnGap: "16px" }}>
+            <CustomButton
+              style={{
+                marginTop: "16px",
+                color: "white",
+                borderColor: "white",
+              }}
+            >
+              Print
+            </CustomButton>
+            <CustomButton
+              style={{
+                marginTop: "16px",
+                color: "white",
+                borderColor: "white",
+              }}
+            >
+              Message
+            </CustomButton>
           </div>
         </div>
       )}
