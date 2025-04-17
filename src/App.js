@@ -61,13 +61,13 @@ function findPath(nodes, edges, startNode, endNode) {
 }
 
 function findPathTerminal(nodes, edges, startNode, endNode) {
-  console.log("startNode 2", startNode);
-  console.log("endNode 2", endNode);
   if (
     !debugPointsTerminal.find((nodeTerminal) => nodeTerminal.id === endNode)
   ) {
     endNode = startNode[0] + startNode[1] + "P1";
   }
+  console.log("startNode 2", startNode);
+  console.log("endNode 2", endNode);
   const queue = [[startNode]];
   const visited = new Set();
 

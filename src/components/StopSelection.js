@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { stopToNode, stopType } from "../data/stops";
+import { edges, edgesTerminal, stopToNode, stopType } from "../data/stops";
 import CustomButton from "./CustomButton";
+import { GetDistance } from "./GetDistance";
 
 export const StopSelection = ({
   currentNavType,
@@ -15,14 +16,18 @@ export const StopSelection = ({
       <div className="nav-stops-div">
         {stopToNode
           .filter((stop) => stop.type === currentNavType)
-          .map((stop) => (
-            <CustomButton
-              selected={stop.name === currentStop?.name}
-              onClick={() => handleSelectStop(stop, index)}
-            >
-              {stop.name}
-            </CustomButton>
-          ))}
+          .map((stop) => {
+            console.log(stop);
+            return (
+              <CustomButton
+                selected={stop.name === currentStop?.name}
+                onClick={() => handleSelectStop(stop, index)}
+              >
+                {stop.name} - {GetDistance(edges, edgesTerminal, "PSB", stop)}{" "}
+                {" mins"}
+              </CustomButton>
+            );
+          })}
       </div>
       {currentStop && (
         <div

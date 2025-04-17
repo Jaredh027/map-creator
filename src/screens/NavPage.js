@@ -65,6 +65,12 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
     <div className="nav-main-div">
       <div className="nav-text-div">
         <h1>Select where you would like to go</h1>
+        <p>
+          {"Flight: " + userInformation[0] + " | "}{" "}
+          {"Gate: " + userInformation[1] + " | "}{" "}
+          {"Departure: " + userInformation[2]}
+        </p>
+        <p></p>
       </div>
       <div style={{ display: "grid", rowGap: "16px" }}>
         {navType.map((type, index) => (
