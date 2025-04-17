@@ -57,19 +57,26 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
     setNodes(nodesArr);
   };
 
-  const flightNumber = userInformation[0];
-  const gate = userInformation[1];
-  const flightTime = userInformation[2];
+  let flightNumber = null;
+  let gate = null;
+  let flightTime = null;
+  if (userInformation) {
+    flightNumber = userInformation[0];
+    gate = userInformation[1];
+    flightTime = userInformation[2];
+  }
 
   return (
     <div className="nav-main-div">
       <div className="nav-text-div">
         <h1>Select where you would like to go</h1>
-        <p>
-          {"Flight: " + userInformation[0] + " | "}{" "}
-          {"Gate: " + userInformation[1] + " | "}{" "}
-          {"Departure: " + userInformation[2]}
-        </p>
+
+        {userInformation && (
+          <p>
+            {"Flight: " + flightNumber + " | "} {"Gate: " + gate + " | "}{" "}
+            {"Departure: " + flightTime}
+          </p>
+        )}
         <p></p>
       </div>
       <div style={{ display: "grid", rowGap: "16px" }}>

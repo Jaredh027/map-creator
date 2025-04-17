@@ -64,4 +64,5 @@ body {
 .nav-stops-div {
   display: flex;
   column-gap: 16px;
+  max-width: 80vw;
 }
