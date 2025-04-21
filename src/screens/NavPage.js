@@ -14,9 +14,9 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
     let cpySelectedStops = [...selectedStops];
     cpySelectedStops[index] = stop;
     setSelectedStops(cpySelectedStops);
-    let cpyConfirmedStops = [...confirmedStops];
-    cpyConfirmedStops[index] = 0;
-    setConfirmedSpots(cpyConfirmedStops);
+    // let cpyConfirmedStops = [...confirmedStops];
+    // cpyConfirmedStops[index] = 0;
+    // setConfirmedSpots(cpyConfirmedStops);
   };
   const handleNavType = (type, index) => {
     let cpyNavType = [...navType];
@@ -155,21 +155,21 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
             alignItems: "center",
           }}
         >
-          <h2>Would you like to add another stop?</h2>
-
           <CustomButton
             style={{ margin: 0, color: "white", borderColor: "white" }}
             onClick={handleAddStop}
           >
-            Yes
+            + Add another stop
           </CustomButton>
 
-          <CustomButton
-            style={{ margin: 0, color: "white", borderColor: "white" }}
-            onClick={handleDoneSelecting}
-          >
-            No
-          </CustomButton>
+          {confirmedStops.length > 0 && (
+            <CustomButton
+              style={{ margin: 0, color: "white", borderColor: "white" }}
+              onClick={handleDoneSelecting}
+            >
+              Create Route
+            </CustomButton>
+          )}
         </div>
       </div>
     </div>

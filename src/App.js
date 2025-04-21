@@ -29,8 +29,6 @@ const PATH_COLORS = [
 
 function findPath(nodes, edges, startNode, endNode) {
   // These is are in the form "P8"
-  console.log("startNode 1", startNode);
-  console.log("endNode 1", endNode);
   const startNodeAsTerminal = stopToNode.find(
     (s) => s.name === "Terminal " + startNode.terminal
   ).id;
@@ -48,7 +46,6 @@ function findPath(nodes, edges, startNode, endNode) {
     if (current === endNodeAsTerminal) return path;
 
     if (!visited.has(current)) {
-      console.log("current 1", current);
       visited.add(current);
       const neighbors = edges[current] || [];
       for (const next of neighbors) {
@@ -66,20 +63,17 @@ function findPathTerminal(nodes, edges, startNode, endNode) {
   ) {
     endNode = startNode[0] + startNode[1] + "P1";
   }
-  console.log("startNode 2", startNode);
-  console.log("endNode 2", endNode);
+
   const queue = [[startNode]];
   const visited = new Set();
 
   while (queue.length > 0) {
-    // console.log(queue);
     const path = queue.shift();
     const current = path[path.length - 1];
 
     if (current === endNode) return path;
 
     if (!visited.has(current)) {
-      console.log("Current", current);
       visited.add(current);
       const neighbors = edges[current] || [];
       for (const next of neighbors) {
@@ -105,8 +99,6 @@ function App() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    console.log("nodes", nodes);
-
     // Only proceed if we have nodes to process
     if (!nodes.length || !startNode) return;
 
@@ -162,8 +154,18 @@ function App() {
             terminalEntryNode.id,
             currentStop.id
           );
-          subPathColor.push(colorIndex);
-          fullTerminalPath = [...fullTerminalPath, ...terminalSegmentPath];
+          console.log(
+            "Top",
+            terminalSegmentPath,
+            colorIndex,
+            terminalEntryNode.id,
+            currentStop.id
+          );
+
+          if (terminalSegmentPath.length > 0) {
+            subPathColor.push(colorIndex);
+            fullTerminalPath = [...fullTerminalPath, ...terminalSegmentPath];
+          }
 
           colorIndex += 1;
         } else {
@@ -190,6 +192,13 @@ function App() {
             currentStop.id
           );
           fullTerminalPath = [...fullTerminalPath, ...terminalSegmentPath];
+          console.log(
+            "Btm",
+            terminalSegmentPath,
+            colorIndex,
+            terminalEntryNode.id,
+            currentStop.id
+          );
           subPathColor.push(colorIndex);
           colorIndex += 1;
         }
@@ -232,6 +241,14 @@ function App() {
   const handleNoPopup = () => {
     setScannedInfo(null);
     setOpen(false);
+  };
+
+  const handleBackButton = () => {
+    let activeScreenIndex = screen.findIndex((s) => s === true);
+    let cpyScreen = [...screen];
+    cpyScreen[activeScreenIndex] = false;
+    cpyScreen[activeScreenIndex - 1] = true;
+    setScreen(cpyScreen);
   };
 
   return (
@@ -279,7 +296,11 @@ function App() {
 
           <div className="map-container">
             {startNode?.terminal !== endNode?.terminal && (
-              <AirportMapCanvas path={path} colorArr={mainPathColors} />
+              <AirportMapCanvas
+                path={path}
+                colorArr={mainPathColors}
+                stopCount={nodes.length - 1}
+              />
             )}
 
             <TerminalMapCanvas
@@ -289,6 +310,7 @@ function App() {
               }
               path={terminalPath}
               colorArr={subPathColors}
+              stopCount={nodes.length - 1}
             />
           </div>
           <div style={{ display: "flex", columnGap: "16px" }}>
@@ -311,6 +333,16 @@ function App() {
               Message
             </CustomButton>
           </div>
+        </div>
+      )}
+      {screen[0] !== true && (
+        <div style={{ marginTop: "2rem" }}>
+          <CustomButton
+            style={{ color: "white", borderColor: "white" }}
+            onClick={handleBackButton}
+          >
+            Back
+          </CustomButton>
         </div>
       )}
     </div>

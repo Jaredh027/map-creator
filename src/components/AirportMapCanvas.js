@@ -106,7 +106,7 @@ function computePoint(i, path, stopNodeIds) {
   }
 }
 
-export default function AirportMapCanvas({ path = [], colorArr }) {
+export default function AirportMapCanvas({ path = [], colorArr, stopCount }) {
   const canvasRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 300, height: 500 });
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -166,7 +166,9 @@ export default function AirportMapCanvas({ path = [], colorArr }) {
 
         // Draw each segment (from one stop to the next) in reverse order so that
         // the earliest segments are drawn last and appear on top.
-        let actualSegLineCount = 0;
+        let actualSegLineCount = colorArr.length - 1;
+        console.log("stopCount", actualSegLineCount);
+        console.log("COLOR ARRAY AIRPORT", colorArr);
         for (let seg = stopIndices.length - 2; seg >= 0; seg--) {
           const segStart = stopIndices[seg];
           const segEnd = stopIndices[seg + 1];
@@ -198,7 +200,7 @@ export default function AirportMapCanvas({ path = [], colorArr }) {
               ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
             } else {
               ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
-              actualSegLineCount += 1;
+              actualSegLineCount -= 1;
             }
 
             ctx.lineWidth = 4;

@@ -55,7 +55,7 @@ function computePoint(i, path, stopNodeIds) {
   }
   // For endpoints, offset based on the adjacent segment.
   if (i === 0) {
-    console.log("PATH I+1", path[i + 1]);
+    // console.log("PATH I+1", path[i + 1]);
     const nextNode = nodesTerminal[path[i + 1]];
     if (!nextNode) return { x: actual.x, y: actual.y };
     const vec = getNormalizedVector(actual, nextNode);
@@ -104,7 +104,12 @@ function computePoint(i, path, stopNodeIds) {
   }
 }
 
-export default function TerminalMapCanvas({ terminal, path = [], colorArr }) {
+export default function TerminalMapCanvas({
+  terminal,
+  path = [],
+  colorArr,
+  stopCount,
+}) {
   const canvasRef = useRef(null);
   const imageSrc =
     terminal === "A"
@@ -122,7 +127,7 @@ export default function TerminalMapCanvas({ terminal, path = [], colorArr }) {
   // Create a set of stop node IDs for quick lookup.
   const stopNodeIds = new Set(stopToNodeTerminal.map((stop) => stop.id));
 
-  console.log("PATH", path);
+  // console.log("PATH", path);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -184,7 +189,9 @@ export default function TerminalMapCanvas({ terminal, path = [], colorArr }) {
 
         // Draw each segment between stops in reverse order so that
         // the earliest segments (first paths) are drawn last and appear on top.
-        let actualSegLineCount = 0;
+        let actualSegLineCount = colorArr.length - 1;
+        console.log("stopCount", actualSegLineCount);
+        console.log("COLOR ARRAY TERMINAL", colorArr);
         for (let seg = stopIndices.length - 2; seg >= 0; seg--) {
           const segStart = stopIndices[seg];
           const segEnd = stopIndices[seg + 1];
@@ -209,14 +216,16 @@ export default function TerminalMapCanvas({ terminal, path = [], colorArr }) {
               actualSegLineCount,
               colorArr[actualSegLineCount],
               PATH_COLORS[colorArr[actualSegLineCount]],
-              colorArr
+              colorArr,
+              segmentPoints
             );
             if (segmentPoints.length <= 2) {
               ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
             } else {
               ctx.strokeStyle = PATH_COLORS[colorArr[actualSegLineCount]];
-              actualSegLineCount += 1;
+              actualSegLineCount -= 1;
             }
+
             ctx.lineWidth = 5;
             ctx.lineJoin = "round";
             ctx.stroke();

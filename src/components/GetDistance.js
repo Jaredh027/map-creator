@@ -67,7 +67,7 @@ function getPaths(edges1, edges2, startNode, endNode) {
     if (current === endNodeAsTerminal) return path;
 
     if (!visited1.has(current)) {
-      console.log("current 1", current);
+      //   console.log("current 1", current);
       visited1.add(current);
       const neighbors = edges1[current] || [];
       for (const next of neighbors) {
@@ -94,7 +94,7 @@ function getPathsTerminal(edges1, edges2, startNode, endNode) {
     }
 
     if (!visited2.has(current)) {
-      console.log("Current", current);
+      //   console.log("Current", current);
       visited2.add(current);
       const neighbors = edges2[current] || [];
       for (const next of neighbors) {
