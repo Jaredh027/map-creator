@@ -22,9 +22,13 @@ export const StopSelection = ({
               <CustomButton
                 selected={stop.name === currentStop?.name}
                 onClick={() => handleSelectStop(stop, index)}
+                key={stop.id}
+                style={{ display: "grid", minWidth: "10rem" }}
               >
-                {stop.name} - {GetDistance(edges, edgesTerminal, "PSB", stop)}{" "}
-                {" mins"}
+                <p style={{ margin: 0 }}>{stop.name}</p>{" "}
+                <p style={{ margin: 0 }}>
+                  {GetDistance(edges, edgesTerminal, "PSB", stop)} {" mins"}
+                </p>
               </CustomButton>
             );
           })}

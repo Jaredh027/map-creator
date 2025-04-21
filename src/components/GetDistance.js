@@ -22,15 +22,16 @@ export function GetDistance(edges1, edges2, startNode, endNode) {
   });
   pathsArr2.forEach((stop) => {
     if (stop in nodesTerminal) {
-      pointsPath1.push(nodesTerminal[stop]);
+      pointsPath2.push(nodesTerminal[stop]);
     }
   });
+  console.log(pointsPath1);
 
   let distance1 = totalPairwiseDistance(pointsPath1);
   console.log(distance1);
   let distance2 = totalPairwiseDistance(pointsPath2) / 4;
   console.log(distance2);
-  return distance1 + distance2;
+  return Math.ceil(distance1 + distance2);
 }
 
 function totalPairwiseDistance(points) {

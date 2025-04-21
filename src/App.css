@@ -65,4 +65,5 @@ body {
   display: flex;
   column-gap: 16px;
   max-width: 80vw;
+  flex-wrap: wrap;
 }
