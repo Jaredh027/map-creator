@@ -210,9 +210,10 @@ export default function AirportMapCanvas({ path = [], colorArr, stopCount }) {
         }
 
         // Finally, draw stop markers so they appear on top.
-        stopIndices.forEach((i) => {
+        let index2 = 0;
+        stopIndices.forEach((i, index) => {
           const node = nodes[path[i]];
-          if (!node) return;
+          console.log("nodesTerminal", node);
           // Outer circle.
           ctx.beginPath();
           ctx.arc(node.x * scaleX, node.y * scaleY, 8, 0, 2 * Math.PI);
@@ -221,7 +222,20 @@ export default function AirportMapCanvas({ path = [], colorArr, stopCount }) {
           // Inner circle.
           ctx.beginPath();
           ctx.arc(node.x * scaleX, node.y * scaleY, 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "#FFFFFF";
+
+          if (index === 0) {
+            ctx.fillStyle = PATH_COLORS[colorArr[index2]];
+            console.log(colorArr, index2, PATH_COLORS[colorArr[index2]]);
+          } else {
+            ctx.fillStyle = PATH_COLORS[colorArr[index2]];
+            if (
+              stopIndices[index + 1] &&
+              node !== nodes[path[stopIndices[index + 1]]]
+            ) {
+              index2 += 1;
+            }
+          }
+
           ctx.fill();
         });
       }

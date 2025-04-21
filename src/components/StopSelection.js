@@ -25,7 +25,7 @@ export const StopSelection = ({
                 key={stop.id}
                 style={{ display: "grid", minWidth: "10rem" }}
               >
-                <p style={{ margin: 0 }}>{stop.name}</p>{" "}
+                <p style={{ margin: 0 }}>{stop.name}</p>
                 <p style={{ margin: 0 }}>
                   {GetDistance(edges, edgesTerminal, "PSB", stop)} {" mins"}
                 </p>

@@ -233,8 +233,10 @@ export default function TerminalMapCanvas({
         }
 
         // Draw stop markers (always on top).
-        stopIndices.forEach((i) => {
+        let index2 = 0;
+        stopIndices.forEach((i, index) => {
           const node = nodesTerminal[path[i]];
+          console.log("nodesTerminal", node);
           // Outer circle.
           ctx.beginPath();
           ctx.arc(node.x * scaleX, node.y * scaleY, 8, 0, 2 * Math.PI);
@@ -243,7 +245,20 @@ export default function TerminalMapCanvas({
           // Inner circle.
           ctx.beginPath();
           ctx.arc(node.x * scaleX, node.y * scaleY, 6, 0, 2 * Math.PI);
-          ctx.fillStyle = "#FFFFFF";
+
+          if (index === 0) {
+            ctx.fillStyle = PATH_COLORS[colorArr[index2]];
+            console.log(colorArr, index2, PATH_COLORS[colorArr[index2]]);
+          } else {
+            ctx.fillStyle = PATH_COLORS[colorArr[index2]];
+            if (
+              stopIndices[index + 1] &&
+              node !== nodesTerminal[path[stopIndices[index + 1]]]
+            ) {
+              index2 += 1;
+            }
+          }
+
           ctx.fill();
         });
       }
