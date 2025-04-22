@@ -19,6 +19,13 @@ export const StopSelection = ({
           .filter((stop) => stop.type === currentNavType)
           .map((stop) => {
             console.log(stop);
+            const parts = stop?.name?.split(" ") ?? [];
+            const code =
+              parts.length > 1 ? `${parts[0][0]}${parts[1]}` : parts[0] || "";
+            let isMatch = false;
+            if (userInformation && userInformation[1]) {
+              isMatch = userInformation[1] === code;
+            }
             return (
               <CustomButton
                 selected={stop.name === currentStop?.name}
@@ -27,9 +34,7 @@ export const StopSelection = ({
                 style={{
                   display: "grid",
                   minWidth: "10rem",
-                  backgroundColor:
-                    userInformation[1] ===
-                      stop.name[0] + stop.name.split(" ")[1] && "#D9FFD1",
+                  backgroundColor: isMatch ? "#D9FFD1" : undefined,
                 }}
               >
                 <p style={{ margin: 0 }}>{stop.name}</p>
