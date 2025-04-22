@@ -139,6 +139,7 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
                         handleSelectStop={handleSelectStop}
                         handleConfirmStop={handleConfirmStop}
                         index={index}
+                        userInformation={userInformation}
                       />
                     )}
                   </div>

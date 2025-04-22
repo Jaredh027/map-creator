@@ -285,11 +285,4 @@ export const edgesTerminal = {
   T5S21: ["T5P22"],
 };
 
-export const stopType = [
-  "Restroom",
-  "Food",
-  "Gate",
-  "Terminal",
-  "Exit",
-  "Shopping",
-];
+export const stopType = ["Restroom", "Food", "Gate", "Terminal", "Shopping"];

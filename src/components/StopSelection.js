@@ -9,6 +9,7 @@ export const StopSelection = ({
   handleSelectStop,
   handleConfirmStop,
   index,
+  userInformation,
 }) => {
   return (
     <div>
@@ -23,7 +24,13 @@ export const StopSelection = ({
                 selected={stop.name === currentStop?.name}
                 onClick={() => handleSelectStop(stop, index)}
                 key={stop.id}
-                style={{ display: "grid", minWidth: "10rem" }}
+                style={{
+                  display: "grid",
+                  minWidth: "10rem",
+                  backgroundColor:
+                    userInformation[1] ===
+                      stop.name[0] + stop.name.split(" ")[1] && "#D9FFD1",
+                }}
               >
                 <p style={{ margin: 0 }}>{stop.name}</p>
                 <p style={{ margin: 0 }}>
