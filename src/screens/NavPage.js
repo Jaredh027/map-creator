@@ -57,6 +57,19 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
     setNodes(nodesArr);
   };
 
+  const handleDeleteStop = (index) => {
+    console.log(navType, selectedStops, confirmedStops);
+    let navTypeCp = [...navType];
+    navTypeCp.splice(index, 1);
+    let selectedStopsCp = [...selectedStops];
+    selectedStopsCp.splice(index, 1);
+    let confirmedStopsCp = [...confirmedStops];
+    confirmedStopsCp.splice(index, 1);
+    setNavType(navTypeCp);
+    setSelectedStops(selectedStopsCp);
+    setConfirmedSpots(confirmedStopsCp);
+  };
+
   let flightNumber = null;
   let gate = null;
   let flightTime = null;
@@ -69,7 +82,9 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
   return (
     <div className="nav-main-div">
       <div className="nav-text-div">
-        <h1>Select where you would like to go</h1>
+        <div style={{ textAlign: "center" }}>
+          <h1>Select where you would like to go</h1>
+        </div>
 
         {userInformation && (
           <p>
@@ -79,9 +94,15 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
         )}
         <p></p>
       </div>
-      <div style={{ display: "grid", rowGap: "16px" }}>
+      <div style={{ display: "grid", rowGap: "24px" }}>
         {navType.map((type, index) => (
-          <div key={index} style={{ display: "flex", columnGap: "16px" }}>
+          <div
+            key={index}
+            style={{
+              display: "flex",
+              columnGap: "16px",
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -89,7 +110,10 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
                 alignItems: "center",
                 backgroundColor: "white",
                 borderRadius: "16px",
-                padding: "16px",
+                paddingTop: "16px",
+                paddingBottom: "16px",
+                paddingLeft: "32px",
+                paddingRight: "32px",
                 color: "#444",
               }}
             >
@@ -128,23 +152,41 @@ const NavPage = ({ doneSelecting, screens, setNodes, userInformation }) => {
               </div>
             </div>
 
-            {!confirmedStops[index] ||
-              (confirmedStops[index] !== 0 && (
+            <div style={{ display: "grid", rowGap: "8px" }}>
+              {!confirmedStops[index] ||
+                (confirmedStops[index] !== 0 && (
+                  <CustomButton
+                    style={{
+                      padding: "16px",
+                      border: "solid white 1px",
+                      borderRadius: "16px",
+                      textAlign: "center",
+                      alignContent: "center",
+                      margin: 0,
+                      color: "white",
+                    }}
+                    onClick={() => handleEditStop(index)}
+                  >
+                    Edit
+                  </CustomButton>
+                ))}
+              {confirmedStops.length > 1 && confirmedStops[index] && (
                 <CustomButton
                   style={{
                     padding: "16px",
-                    border: "solid white 1px",
+                    border: "solid red 1px",
                     borderRadius: "16px",
                     textAlign: "center",
                     alignContent: "center",
                     margin: 0,
                     color: "white",
                   }}
-                  onClick={() => handleEditStop(index)}
+                  onClick={() => handleDeleteStop(index)}
                 >
-                  Edit
+                  Delete
                 </CustomButton>
-              ))}
+              )}
+            </div>
           </div>
         ))}
         <div

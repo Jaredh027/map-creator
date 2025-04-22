@@ -29,7 +29,7 @@ const CustomButton = ({ children, startIcon, selected, ...props }) => (
       borderWidth: 1,
       borderStyle: "solid",
       borderColor: selected ? "#005DBA" : "#444",
-      backgroundColor: selected ? "#005DBA" : "transparent",
+      backgroundColor: selected ? "#005DBA" : "rgba(0, 0, 0, 0.1)",
       color: selected ? "white" : "#444",
       display: "flex",
       marginBottom: 2,

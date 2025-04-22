@@ -303,15 +303,17 @@ function App() {
               />
             )}
 
-            <TerminalMapCanvas
-              terminal={
-                endNode?.terminal ||
-                (nodes.length > 0 ? nodes[nodes.length - 1]?.terminal : null)
-              }
-              path={terminalPath}
-              colorArr={subPathColors}
-              stopCount={nodes.length - 1}
-            />
+            {terminalPath.length > 0 && (
+              <TerminalMapCanvas
+                terminal={
+                  endNode?.terminal ||
+                  (nodes.length > 0 ? nodes[nodes.length - 1]?.terminal : null)
+                }
+                path={terminalPath}
+                colorArr={subPathColors}
+                stopCount={nodes.length - 1}
+              />
+            )}
           </div>
           <div style={{ display: "flex", columnGap: "16px" }}>
             <CustomButton

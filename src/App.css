@@ -2,8 +2,8 @@
   text-align: center;
 }
 body {
-  background-color: #005dba;
   color: white;
+  background: #4d4e51 url("./assets/back_pattern.png") repeat;
 }
 
 .App-logo {
