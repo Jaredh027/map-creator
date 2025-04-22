@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.css": "/static/css/main.1f835d77.css",
-    "main.js": "/static/js/main.6d063e71.js",
-    "static/js/453.7da4937a.chunk.js": "/static/js/453.7da4937a.chunk.js",
-    "static/media/terminal_A.png": "/static/media/terminal_A.9c7127f44aad6eca50ee.png",
-    "static/media/terminal_B.png": "/static/media/terminal_B.9c7127f44aad6eca50ee.png",
-    "static/media/airport_full.png": "/static/media/airport_full.d8ec9902bb280400db2d.png",
-    "static/media/back_pattern.png": "/static/media/back_pattern.66a84f209815b51c0a42.png",
-    "index.html": "/index.html",
-    "main.1f835d77.css.map": "/static/css/main.1f835d77.css.map",
-    "main.6d063e71.js.map": "/static/js/main.6d063e71.js.map",
-    "453.7da4937a.chunk.js.map": "/static/js/453.7da4937a.chunk.js.map"
+    "main.css": "/map-creator/static/css/main.b2cffb6c.css",
+    "main.js": "/map-creator/static/js/main.48ae738b.js",
+    "static/js/453.7da4937a.chunk.js": "/map-creator/static/js/453.7da4937a.chunk.js",
+    "static/media/terminal_A.png": "/map-creator/static/media/terminal_A.9c7127f44aad6eca50ee.png",
+    "static/media/terminal_B.png": "/map-creator/static/media/terminal_B.9c7127f44aad6eca50ee.png",
+    "static/media/airport_full.png": "/map-creator/static/media/airport_full.d8ec9902bb280400db2d.png",
+    "static/media/back_pattern.png": "/map-creator/static/media/back_pattern.66a84f209815b51c0a42.png",
+    "index.html": "/map-creator/index.html",
+    "main.b2cffb6c.css.map": "/map-creator/static/css/main.b2cffb6c.css.map",
+    "main.48ae738b.js.map": "/map-creator/static/js/main.48ae738b.js.map",
+    "453.7da4937a.chunk.js.map": "/map-creator/static/js/453.7da4937a.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.1f835d77.css",
-    "static/js/main.6d063e71.js"
+    "static/css/main.b2cffb6c.css",
+    "static/js/main.48ae738b.js"
   ]
 }
